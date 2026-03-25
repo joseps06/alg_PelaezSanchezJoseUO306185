@@ -31,24 +31,38 @@ public class Ferry
     }
 
     public void run() {
-        dp[0][0] = true;
-        for (int  i=1; i<=vehicles.size(); i++) {
-            for (int l=boatLength; l>=0; l--) {
-                if (!dp[i-1][l]) {
-                    continue;  //Si el coche anterior no entra no tiene sentido seguir con el bucle
+    dp[0][0] = true;
+    int maxVehiculos = 0;
+    int ultimaLongitudBabor = 0;
+
+    for (int i = 1; i <= vehicles.size(); i++) {
+        int vLen = vehicles.get(i - 1); // Vehículo actual
+        boolean posible = false;
+
+        for (int l = 0; l <= boatLength; l++) {
+            if (dp[i - 1][l]) {
+                // Meter coche en BABOR
+                if (l + vLen <= boatLength) {
+                    dp[i][l + vLen] = true;
+                    posible = true;
                 }
 
-                //meter coche en babor
-                if (l+vehicles.get(i)<=boatLength) {
-                    dp[i][vehicles.get(i)-1] = true;
-                }
-                //meter coche en estribor
-                if ((sumatorio[i]-l)<=boatLength) {
+                // Meter coche en ESTRIBOR
+                int ocupadoEstribor = sumatorio[i - 1] - l; 
+                if (ocupadoEstribor + vLen <= boatLength) {
                     dp[i][l] = true;
+                    posible = true;
                 }
             }
         }
+
+        if (!posible) {
+            System.out.println("El vehículo " + i + " no cabe. Carga finalizada.");
+            break;
+        }
+        maxVehiculos = i;
     }
+}
 
     public void printData() {
         System.out.printf("Longitud de los carriles: %d", boatLength);
