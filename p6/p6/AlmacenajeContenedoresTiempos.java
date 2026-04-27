@@ -17,7 +17,9 @@ public class AlmacenajeContenedoresTiempos {
         // Guardamos la salida estándar original (la consola)
         PrintStream consolaOriginal = System.out;
 
-        // Creamos una salida "vacía" para que AlmacenajeContenedores no imprima nada
+        // Creamos una salida "vacía" para que AlmacenajeContenedores no hast que
+        // no acabe y tengamos los tiempos(si no mostraria la solucion por ejemplo,
+        //y solo quier los tiempos)
         PrintStream salidaNula = new PrintStream(new OutputStream() {
             public void write(int b) {
                 // No hace nada, descarta los caracteres

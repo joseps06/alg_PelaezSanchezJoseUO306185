@@ -1,5 +1,12 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 
 /**
@@ -9,132 +16,142 @@ import java.util.List;
  * En su lugar, vamos a registrar las columnas y diagonales que ya están bajo ataque utilizando tres arreglos booleanos: 
  * uno para las columnas, otro para las diagonales principales (de arriba a abajo, izquierda a derecha) y otro para las diagonales secundarias (de arriba a abajo, derecha a izquierda).
  */
-public class NReinas {
-    
-    private List<List<String>> soluciones; // cada lista interna de Strings representa un tablero completo donde cada String es una fila.
+public class LaberintoTodas {
 
-    private boolean[] columnas; // indica si una columna específica (de 0 a N-1) ya tiene una reina.
-    private boolean[] diagonalesPrincipales; // de arriba a abajo, izda a decha (\)
-    private boolean[] diagonalesSecundarias; // de arriba a abajo, decha a izda (/)
+    private int[][] tablero;
 
-    /**
-     * Método principal que inicia el algoritmo.
-     * @param n de tipo int. El tamaño del tablero y el número de reinas.
-     * @return soluciones, de tipo List<List<String>>. Una lista con todas las configuraciones válidas del tablero
-     */
-    public List<List<String>> resolverNReinas(int n) {
-        soluciones = new ArrayList<>();
-        
-        // Inicializamos los rastreadores de ataques en columnas y diagonales
-        columnas = new boolean[n];
-        diagonalesPrincipales = new boolean[2 * n - 1];
-        diagonalesSecundarias = new boolean[2 * n - 1];
+    private int pInicioX;
+    private int pInicioY;
+    private int pFinalX;
+    private int pFinalY;
 
-        // Inicializar el tablero vacío con puntos '.' (os doy un método) 
-        char[][] tablero = crearTablero(n);
-        
-        // Iniciar el backtracking desde la fila 0
-        backtracking(0, n, tablero);
-        
-        return soluciones;
+    private int mejor;
+
+    private final int tSize=7;
+
+
+    public LaberintoTodas() {
+
     }
 
-   
+    public static void main(String[] args) {
+        String file = "P6-Extra/Opcional/caso2.txt"; //Cambiar ruta en funcion de desde donde ejecute
+        int posI = 0;
+        int posF = 48;
+        System.out.printf("Se intentará llegar de la posición %d a la %d\n", posI, posF);
+        LaberintoTodas lb = new LaberintoTodas();
+        lb.ejecutar(file, posI, posF);
+    }
 
-    /**
-     * Método de backtracking para colocar las reinas en el tablero.
-     * @param fila, de tipo int. La fila actual en la que intentamos colocar una reina.
-     * @param n,    de tipo int. El tamaño del tablero y el número de reinas.
-     * @param tablero,  de tipo char[][]. La representación actual del tablero con las reinas colocadas. 
-     */
-    private void backtracking(int fila, int n, char[][] tablero) {
-        // Caso base: si logramos llegar a la fila n, colocamos todas las reinas con éxito
-        if (fila == n) {
-            soluciones.add(construirSolucion(tablero));
+    public void ejecutar(String file, int posI, int posF) {
+        loadData(file);
+        printSolucion(tablero);
+        parseInicioFinal(posI, posF);
+        mejor = tSize*tSize;
+
+        backTracking(pInicioX, pInicioY, tablero);
+    }
+
+
+    private void backTracking(int pX, int pY, int[][] tableroAct) {
+        //Caso base
+        if (pX == pFinalX && pY == pFinalY) {
+            printSolucion(tableroAct);
+            int doses = contarDosesTablero(tableroAct);
+            if (mejor>doses) {
+                mejor = doses;
+
+                // Backtracking (desmarcar antes de salir)
+                tableroAct[pX][pY] = 0;
+                return;
+            }
+        }
+
+            // Control de límites
+        if (pX < 0 || pY < 0 || pX >= tSize || pY >= tSize) {
             return;
         }
-       
+        // Si es obstáculo o ya visitado
+        if (tableroAct[pX][pY] != 0) {
+            return;
+        }
+        // Marcar camino
+        tableroAct[pX][pY] = 2;
 
-        for (int col = 0; col < n; col++) {
+        // Movimientos en 4 direcciones
+        backTracking(pX + 1, pY, tableroAct); // abajo
+        backTracking(pX - 1, pY, tableroAct); // arriba
+        backTracking(pX, pY + 1, tableroAct); // derecha
+        backTracking(pX, pY - 1, tableroAct); // izquierda
 
-            // Fórmulas matemáticas para identificar la diagonal a la que pertenece una celda
-            int d1 = fila - col + (n - 1); // Diagonal principal (\)
-            int d2 = fila + col;           // Diagonal secundaria (/)
+        // Backtracking: desmarcar
+        tableroAct[pX][pY] = 0;
 
-            // Verificar si la posición es segura
-            if (!columnas[col] && !diagonalesPrincipales[d1] && !diagonalesSecundarias[d2]) {
 
-                // 1. Avanzar -> Colocar la reina (meter un 'Q') y marcar la columna y diagonales como atacadas
-                tablero[fila][col] = 'Q';
-                columnas[col] = true;
-                diagonalesPrincipales[d1] = true;
-                diagonalesSecundarias[d2] = true;
+    }
 
-                // 2. backtracking
-                backtracking(fila + 1, n, tablero);
 
-                // 3. Retroceder
-                tablero[fila][col] = '.';
-                columnas[col] = false;
-                diagonalesPrincipales[d1] = false;
-                diagonalesSecundarias[d2] = false;
+    private void printSolucion(int[][] tableroAct) {
+        System.out.printf("Se ha encontrado una solución con %d pasos: \n", contarDosesTablero(tableroAct));
+        for (int i=0; i<tSize; i++) {
+            for (int j=0; j<tSize; j++) {
+                System.out.print(tableroAct[i][j]);
             }
-
-            
+            System.out.print("\n");
         }
     }
 
-    /**
-     * Método auxiliar para crear un tablero vacío representado como una matriz de caracteres
-     * @param n, de tipo int. El tamaño del tablero (NxN)
-     * @return tablero, de tipo char[][]. Un tablero inicializado con '.' indicando casillas vacias
-     */
-     private char[][] crearTablero(int n) {
-        char[][] tablero = new char[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                tablero[i][j] = '.';
+
+    private int contarDosesTablero(int[][] tableroAct) {
+        int cont = 0;
+        for (int i=0; i<tSize; i++) {
+            for (int j=0; j<tSize; j++) {
+                if (tableroAct[i][j]==2) {
+                    cont++;
+                }
             }
         }
-        return tablero;
+        return cont;
     }
 
-    /** 
-    * Método auxiliar para convertir la matriz de caracteres en una lista de Strings
-    */
-    private List<String> construirSolucion(char[][] tablero) {
-        List<String> solucion = new ArrayList<>();
-        for (char[] fila : tablero) {
-            solucion.add(new String(fila));
-        }
-        return solucion;
-    }
 
-    /**
-     * Método auxiliar para pintar el tablero por consola
-     */
-    private static void pintarTablero(List<List<String>> resultado) {
-        for (int i = 0; i < resultado.size(); i++) {
-            System.out.println("Solución " + (i + 1) + ":");
-            for (String fila : resultado.get(i)) {
-                System.out.println(fila);
+    private void parseInicioFinal(int pInicio, int pFinal) {
+        int cont = 0;
+        for (int i=0; i<tSize; i++) {
+            for (int j=0; j<tSize; j++) {
+                if (cont == pInicio) {
+                    this.pInicioX=i;
+                    this.pInicioY=j;
+                }
+                if (cont == pFinal) {
+                    this.pFinalX=i;
+                    this.pFinalY=j;
+                }
+                cont++;
             }
-            System.out.println();
         }
     }
 
-    /**
-     *  Método principal para ejecutar el programa
-     *  @param args, el primer argumento es el valor de N, o se usará 4 por defecto.
-     */ 
-    public static void main(String[] args) {
-        NReinas algoritmo = new NReinas();
-        int n = args != null && args.length > 0 ? Integer.parseInt(args[0]) : 4; 
-        List<List<String>> resultado = algoritmo.resolverNReinas(n);
-        
-        System.out.println("Se encontraron " + resultado.size() + " soluciones para N = " + n + "\n");
-        
-        pintarTablero(resultado);
-    }
+    public void loadData (String file) {
+        this.tablero = new int[7][7];
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String line;
+            int i=0;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(" ");
+                for (int j = 0; j < tSize; j++) {
+                    tablero[i][j] = Integer.parseInt(parts[j]);
+                }
+                i++;
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    } 
+
 
 }

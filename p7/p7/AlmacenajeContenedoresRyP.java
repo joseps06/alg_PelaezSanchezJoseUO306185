@@ -5,10 +5,8 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 public class AlmacenajeContenedoresRyP {
 
@@ -16,50 +14,40 @@ public class AlmacenajeContenedoresRyP {
     private Integer[] conjuntoS;
     private int mejorK;
     private List<List<Integer>> mejorDistribucion;
-    private int[] pesosActuales;
-
-    private int[] sumaRestante; // NUEVO: para cotas
+    private int[] pesosActuales; // Para evitar el método sum() lento. Guarda para cada
+                                 //contenedor i su peso actual.
 
     public AlmacenajeContenedoresRyP(int c, Integer[] toS) {
-        this.capacidadC = c;
-        this.conjuntoS = toS;
-
+        this.capacidadC = c; //Capacidad de cada contenerdo
+        this.conjuntoS = toS; //lista que tieje los pesos de los distintos objetos
+        // Ordenamos de mayor a menor para podar mucho antes el árbol
         Arrays.sort(this.conjuntoS, Collections.reverseOrder());
 
         this.mejorK = conjuntoS.length;
         this.mejorDistribucion = new ArrayList<>();
         this.pesosActuales = new int[conjuntoS.length];
-
-        // Precalcular suma restante
-        sumaRestante = new int[conjuntoS.length + 1];
-        sumaRestante[conjuntoS.length] = 0;
-        for (int i = conjuntoS.length - 1; i >= 0; i--) {
-            sumaRestante[i] = sumaRestante[i + 1] + conjuntoS[i];
-        }
     }
 
     public static void main(String[] args) {
         if (args.length == 0) {
-            System.out.println("Indica el fichero.");
+            System.out.println("Por favor, indica el nombre del fichero.");
             return;
         }
 
         try {
             Scanner sc = new Scanner(new File(args[0]));
             int c = sc.nextInt();
-
-            List<Integer> lista = new ArrayList<>();
+            List<Integer> listaAux = new ArrayList<>();
             while (sc.hasNextInt()) {
-                lista.add(sc.nextInt());
+                listaAux.add(sc.nextInt());
             }
-
-            Integer[] toS = lista.toArray(new Integer[0]);
-
-            AlmacenajeContenedoresRyP p = new AlmacenajeContenedoresRyP(c, toS);
-            p.resolver();
-
+            Integer[] toS = listaAux.toArray(new Integer[0]);
+            
+            AlmacenajeContenedoresRyP problema = new AlmacenajeContenedoresRyP(c, toS);
+            problema.resolver();
+            
         } catch (FileNotFoundException e) {
-            System.out.println("Error fichero.");
+            System.err.println("Fichero no encontrado.");
         }
     }
 
@@ -68,62 +56,76 @@ public class AlmacenajeContenedoresRyP {
         mostrarSolucion();
     }
 
+
+
     private void backtracking(int indexObject, List<List<Integer>> contenedores) {
+        //Poda: Si (Contenedores Actuales + Cota L1) >= Mejor Solución, dejas de explorar
+        int sumaFaltante = sumaRestante(indexObject);
+        // Estimamos cuántos contenedores extra necesitaremos como mínimo
+        int cotaInferior = (int) Math.ceil((double) sumaFaltante / capacidadC);
 
-        int usados = contenedores.size();
-
-        // COTA INFERIOR
-        int capacidadRestante = sumaRestante[indexObject];
-        int cotaInferior = (int) Math.ceil((double) capacidadRestante / capacidadC);
-
-        // PODA Branch & Bound
-        if (usados + cotaInferior >= mejorK) {
-            return;
+        if (contenedores.size() + cotaInferior >= mejorK) {
+            return; // Esta rama nunca superará a la mejor solución actual
         }
 
-        // Caso base
+        //Miramos si ya hemos llegado al último objeto, si es así y no hemos podado
+        //es porque esta es la mejor distribucion por ahora, por lo que la guardamos
         if (indexObject == conjuntoS.length) {
-            mejorK = usados;
+            mejorK = contenedores.size(); //Cuantos contenedores se han usado, para podar
             guardarCopiaMejorSolucion(contenedores);
             return;
         }
 
-        int objeto = conjuntoS[indexObject];
+        //Sacamos el peso del objeto en el que estamos
+        int pesoActual = conjuntoS[indexObject];
 
-        // Evitar simetrías (mejora importante)
-        Set<Integer> cargasProbadas = new HashSet<>();
-
-        // 1. Contenedores existentes
+        //Para cada contenedor en orden, miramos si el objeto cabe
         for (int i = 0; i < contenedores.size(); i++) {
+            // ¿Cabe en el contenedor i?
+            if (pesosActuales[i] + pesoActual <= capacidadC) {
+                //Y si cabe lo metemos
+                contenedores.get(i).add(pesoActual);
+                pesosActuales[i] += pesoActual;
 
-            if (cargasProbadas.contains(pesosActuales[i])) continue;
-
-            if (pesosActuales[i] + objeto <= capacidadC) {
-
-                cargasProbadas.add(pesosActuales[i]);
-
-                // avanzar
-                pesosActuales[i] += objeto;
-                contenedores.get(i).add(objeto);
-
+                // Llamada recursiva para el siguiente objeto
                 backtracking(indexObject + 1, contenedores);
 
-                // retroceder
+                // Hacemos el retroceso (backtrack) pa cuando vuelva
+                pesosActuales[i] -= pesoActual;
                 contenedores.get(i).remove(contenedores.get(i).size() - 1);
-                pesosActuales[i] -= objeto;
             }
         }
 
-        // 2. Nuevo contenedor
-        contenedores.add(new ArrayList<>(List.of(objeto)));
-        pesosActuales[contenedores.size() - 1] = objeto;
+        //En caso de que no entrar en ningun contenedor existente creamos uno, pero
+        //solo si merece la pena, es decir si no estamos pasando el record de contenedores
+        if (contenedores.size() + 1 < mejorK) {
+            List<Integer> nuevoContenedor = new ArrayList<>();
+            nuevoContenedor.add(pesoActual);
+            contenedores.add(nuevoContenedor); // Añadimos la nueva lista
+            pesosActuales[contenedores.size() - 1] = pesoActual;
 
-        backtracking(indexObject + 1, contenedores);
+            // Llamada recursiva para el siguiente objeto
+            backtracking(indexObject + 1, contenedores);
 
-        // retroceder
-        pesosActuales[contenedores.size() - 1] = 0;
-        contenedores.remove(contenedores.size() - 1);
+            // Hacemos el retroceso (backtrack) pa cuando vuelva
+            pesosActuales[contenedores.size() - 1] = 0;
+            contenedores.remove(contenedores.size() - 1); // Borramos la lista entera
+        }
     }
+
+    //Heuristico para la poda. (Contenedores Actuales + Cota L1) siendo Cota
+    //L1=sumatorio pesos restantes/capacidad
+    //Aqui calculamos el sumatorio de los restantes
+    private int sumaRestante(int indexObject) {
+    int suma = 0;
+    for (int i = indexObject; i < conjuntoS.length; i++) {
+        suma += conjuntoS[i];
+    }
+    return suma;
+    
+}
+
+
 
     private void guardarCopiaMejorSolucion(List<List<Integer>> contenedores) {
         mejorDistribucion = new ArrayList<>();
@@ -133,16 +135,46 @@ public class AlmacenajeContenedoresRyP {
     }
 
     private void mostrarSolucion() {
-        System.out.println("Lista de contenedores:");
-
+        System.out.println("Lista de contenedores y objetos contenidos:");
         for (int i = 0; i < mejorDistribucion.size(); i++) {
             System.out.print("Contenedor " + (i + 1) + ": ");
-            for (int x : mejorDistribucion.get(i)) {
-                System.out.print(x + " ");
+            for (Integer obj : mejorDistribucion.get(i)) {
+                System.out.print(obj + " ");
             }
             System.out.println();
         }
-
-        System.out.println("Número mínimo: " + mejorK);
+        System.out.println("El número de contenedores necesario es " + mejorK + ".");
     }
+
+
+    //Estructura backtracking una solucion
+    /**
+     * public class BacktrackingExample {
+
+        static boolean haySolucion = false;
+
+        public static void backtracking(Estado e) {
+
+            // Caso base: ¿es solución?
+            if (e.esSolucion()) {
+                System.out.println(e);
+                haySolucion = true;
+                return; // importante para no seguir explorando
+            }
+
+            // Caso recursivo: generar hijos
+            while (e.hasNextHijos() && !haySolucion) {
+
+                Estado estadoHijo = e.nextHijo(); // siguiente hijo válido
+
+                if (estadoHijo != null) {
+                    backtracking(estadoHijo); // llamada recursiva
+                }
+            }
+        }
+    }
+     */
+
+
+    
 }

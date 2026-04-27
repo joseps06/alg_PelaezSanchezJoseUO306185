@@ -14,11 +14,12 @@ public class AlmacenajeContenedores {
     private Integer[] conjuntoS;
     private int mejorK;
     private List<List<Integer>> mejorDistribucion;
-    private int[] pesosActuales; // Para evitar el método sum() lento
+    private int[] pesosActuales; // Para evitar el método sum() lento. Guarda para cada
+                                 //contenedor i su peso actual.
 
     public AlmacenajeContenedores(int c, Integer[] toS) {
-        this.capacidadC = c;
-        this.conjuntoS = toS;
+        this.capacidadC = c; //Capacidad de cada contenerdo
+        this.conjuntoS = toS; //lista que tieje los pesos de los distintos objetos
         // Ordenamos de mayor a menor para podar mucho antes el árbol
         Arrays.sort(this.conjuntoS, Collections.reverseOrder());
 
@@ -55,52 +56,60 @@ public class AlmacenajeContenedores {
         mostrarSolucion();
     }
 
+
+
     private void backtracking(int indexObject, List<List<Integer>> contenedores) {
-        // Poda por optimalidad: si ya llevamos tantos o más contenedores que la mejor solución, paramos
-        if (contenedores.size() >= mejorK) {
+        //Poda: si las cajas que llevamos son mas de las de la mejor solucion pa que seguir
+        if (contenedores.size() >= mejorK){
             return;
-        }
+        } 
 
-        // Caso base
+        //Miramos si ya hemos llegado al último objeto, si es así y no hemos podado
+        //es porque esta es la mejor distribucion por ahora, por lo que la guardamos
         if (indexObject == conjuntoS.length) {
-            if (contenedores.size() < mejorK) {
-                mejorK = contenedores.size();
-                guardarCopiaMejorSolucion(contenedores);
-            }
+            mejorK = contenedores.size(); //Cuantos contenedores se han usado, para podar
+            guardarCopiaMejorSolucion(contenedores);
             return;
         }
 
-        int objetoActual = conjuntoS[indexObject];
+        //Sacamos el peso del objeto en el que estamos
+        int pesoActual = conjuntoS[indexObject];
 
-        // 1. Intentar meter en contenedores existentes
+        //Para cada contenedor en orden, miramos si el objeto cabe
         for (int i = 0; i < contenedores.size(); i++) {
-            if (pesosActuales[i] + objetoActual <= capacidadC) {
-                // AVANZAR
-                pesosActuales[i] += objetoActual;
-                contenedores.get(i).add(objetoActual);
-                
+            // ¿Cabe en el contenedor i?
+            if (pesosActuales[i] + pesoActual <= capacidadC) {
+                //Y si cabe lo metemos
+                contenedores.get(i).add(pesoActual);
+                pesosActuales[i] += pesoActual;
+
+                // Llamada recursiva para el siguiente objeto
                 backtracking(indexObject + 1, contenedores);
-                
-                // RETROCEDER (Backtrack)
+
+                // Hacemos el retroceso (backtrack) pa cuando vuelva
+                pesosActuales[i] -= pesoActual;
                 contenedores.get(i).remove(contenedores.get(i).size() - 1);
-                pesosActuales[i] -= objetoActual;
             }
         }
 
-        // 2. Intentar meterlo en un nuevo contenedor (solo si no superamos mejorK)
+        //En caso de que no entrar en ningun contenedor existente creamos uno, pero
+        //solo si merece la pena, es decir si no estamos pasando el record de contenedores
         if (contenedores.size() + 1 < mejorK) {
             List<Integer> nuevoContenedor = new ArrayList<>();
-            nuevoContenedor.add(objetoActual);
-            contenedores.add(nuevoContenedor);
-            pesosActuales[contenedores.size() - 1] = objetoActual;
+            nuevoContenedor.add(pesoActual);
+            contenedores.add(nuevoContenedor); // Añadimos la nueva lista
+            pesosActuales[contenedores.size() - 1] = pesoActual;
 
+            // Llamada recursiva para el siguiente objeto
             backtracking(indexObject + 1, contenedores);
 
-            // RETROCEDER (Backtrack)
+            // Hacemos el retroceso (backtrack) pa cuando vuelva
             pesosActuales[contenedores.size() - 1] = 0;
-            contenedores.remove(contenedores.size() - 1);
+            contenedores.remove(contenedores.size() - 1); // Borramos la lista entera
         }
     }
+
+
 
     private void guardarCopiaMejorSolucion(List<List<Integer>> contenedores) {
         mejorDistribucion = new ArrayList<>();
@@ -120,4 +129,36 @@ public class AlmacenajeContenedores {
         }
         System.out.println("El número de contenedores necesario es " + mejorK + ".");
     }
+
+
+    //Estructura backtracking una solucion
+    /**
+     * public class BacktrackingExample {
+
+        static boolean haySolucion = false;
+
+        public static void backtracking(Estado e) {
+
+            // Caso base: ¿es solución?
+            if (e.esSolucion()) {
+                System.out.println(e);
+                haySolucion = true;
+                return; // importante para no seguir explorando
+            }
+
+            // Caso recursivo: generar hijos
+            while (e.hasNextHijos() && !haySolucion) {
+
+                Estado estadoHijo = e.nextHijo(); // siguiente hijo válido
+
+                if (estadoHijo != null) {
+                    backtracking(estadoHijo); // llamada recursiva
+                }
+            }
+        }
+    }
+     */
+
+
+    
 }
