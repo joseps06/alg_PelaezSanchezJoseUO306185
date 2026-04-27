@@ -1,4 +1,4 @@
-package algstudent.s4;
+package p4;
 
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -11,7 +11,7 @@ import org.json.simple.parser.ParseException;
 public class Devorador {
 	public static void main(String[] args) {
 		JSONParser parser = new JSONParser();
-		try (FileReader reader = new FileReader("grafo.json")) {
+		try (FileReader reader = new FileReader("p4/sols/g32.json")) {
 			JSONObject jsonObject = (JSONObject) parser.parse(reader);
 			@SuppressWarnings("unchecked")
 			Map<String, List<String>> grafo = (Map<String, List<String>>) jsonObject.get("grafo");
@@ -30,4 +30,24 @@ public class Devorador {
 			e.printStackTrace();
 		}
 	}
+
+	//Estructura algoritmo devorador
+	/** 
+	public Estado realizarVoraz(List candidatos)
+	{
+		Estado estadoActual= new Estado();
+		while (!candidatos.esVacio() && !estadoActual.esSolucion())
+		{
+			/* Elige la mejor componente
+			* en función de un determinado heurístico 
+			Object x= SeleccionarCandidato(candidatos); // heurístico
+			if (estadoActual.esFactible(x))
+				estadoActual.add(x);
+		}
+		if (estadoActual.esSolucion())
+			return estadoActual;
+		else
+			return null; // No se ha encontrado una solución
+	}
+	*/
 }

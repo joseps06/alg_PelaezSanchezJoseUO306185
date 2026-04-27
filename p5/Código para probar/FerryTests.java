@@ -1,4 +1,4 @@
-package labs.en._26.algteacher.s5;
+
 
 import static org.junit.Assert.assertEquals;
 
@@ -11,6 +11,9 @@ import java.util.List;
 
 import org.junit.Test;
 
+
+import p5.Ferry;
+
 public class FerryTests {
 	private int length;
 	private List<Integer> vehicles;
@@ -18,8 +21,9 @@ public class FerryTests {
 	@Test
 	public void test00() {
 		System.out.printf("\n\nCASE 00\n");
-		loadData("src/main/java/labs/en/_26/algteacher/s5/test00.txt");		
+				
 		Ferry problem = new Ferry(length, vehicles);
+		problem.loadData("src/main/java/labs/en/_26/algteacher/s5/test00.txt");
 		problem.printData();
 		problem.run();
 		problem.printSolutionTable();

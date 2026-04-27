@@ -3,7 +3,7 @@ import json
 from auxiliar import dibujar_mapa_coloreado, generar_mapa_grafo
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":z
     n = 4
     mapa = generar_mapa_grafo(n)
     solucion = realizar_voraz(mapa["grafo"])
